@@ -42,6 +42,7 @@ class TokenTypes(Enum):
     RETURN = "RETURN"
     TRUE = "TRUE"
     FALSE = "FALSE"
+    MACRO = "MACRO"
 
 
 class Token(object):
@@ -88,7 +89,9 @@ LiteralToTokenMap = {
     "[": Token(TokenTypes.LBRACKET, "["),
     "]": Token(TokenTypes.RBRACKET, "]"),
     ":": Token(TokenTypes.COLON, ":"),
+    "macro": Token(TokenTypes.MACRO, "macro"),
     None: Token(TokenTypes.EOF, ""),
+
 }
 
 

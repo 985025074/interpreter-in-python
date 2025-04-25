@@ -1,41 +1,30 @@
+from eval import env
 from eval.eval import ycEval
+from eval.macro import expand_macro, handle_macro
 from lexer.lexer import Lexer, TokenTypes
 from parser.parser import Parser
 
 if __name__ == '__main__':
     code = [[
         """
-            let map = function(arr, f) {
-            let iter = function(arr, accumulated) {
-            if (len(arr) == 0) {
-            accumulated
+           let unless = macro(condition, consequence, alternative) {
+             quote(if (!(unquote(condition))) {
+            unquote(consequence);
             } else {
-            iter(rest(arr), push(accumulated, f(first(arr))));
-            }
+            unquote(alternative);
+            });
             };
-            iter(arr, []);
-            };
-            let reduce = function(arr, initial, f) {
-            let iter = function(arr, result) {
-            if (len(arr) == 0) {
-            result
-            } else {
-            iter(rest(arr), f(result, first(arr)));
-            }
-            };
-            iter(arr, initial);
-            };
-            let sum = function(arr) {
-            reduce(arr, 0, function(initial, el) { initial + el });
-            };
-             sum([1, 2, 3, 4, 5]);
+            unless(10 > 5, print("not greater"), print("greater"));
 
         """, 10
     ]]
 
     for test_code, result in code:
+        env = env.Environment()
         lexer = Lexer(test_code)
         parser = Parser(lexer)
         program = parser.parse_program()
-        program.print_whole_program_nicely()
-        print(ycEval(program).inspect())
+        handle_macro(program, env)
+        program = expand_macro(program, env)
+        result = ycEval(program, env)
+        print(result)

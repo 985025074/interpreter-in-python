@@ -134,7 +134,25 @@ def test_hash_literal(self: unittest.TestCase, hash: Expression, keys: List[str]
     if isinstance(hash, HashLiteral):
         hash_k = hash.raw_keys
         hash_v = hash.raw_values
-        hash_k = [node.value  for node in hash_k]
+        hash_k = [node.value for node in hash_k]
         hash_v = [node.value for node in hash_v]
         self.assertEqual(hash_k, keys)
         self.assertEqual(hash_v, values)
+
+
+def test_macro_literal(self: unittest.TestCase, exp: Expression, params: List[str], body: str):
+    Identifier_list = [Identifier(token=Token(
+        TokenType=TokenTypes.IDENT, Literal=param)) for param in params]
+    block_stmts = get_statements_from_str(body)
+
+    # check if it is a function literal
+
+    self.assertIsInstance(exp, Macro)
+    # check if the parameters are correct
+    if isinstance(exp, Macro):
+        self.assertEqual(exp.parameters, Identifier_list)
+        # check if the body is correct
+
+        self.assertIsNotNone(exp.body, "Function body is None")
+        if exp.body is not None:
+            self.assertEqual(exp.body.statements, block_stmts)

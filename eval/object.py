@@ -3,7 +3,8 @@ from enum import Enum
 from typing import Dict, List
 
 from eval.env import Environment
-from parser.node import BlockStatement, Identifier
+from lexer.token import Token, TokenTypes
+from parser.node import BlockStatement, BooleanLiteral, Identifier, IntegerLiteral, Node, StringLiteral
 
 
 class ObjectType(Enum):
@@ -17,6 +18,8 @@ class ObjectType(Enum):
     BUILTIN = "BUILTIN"
     ARRAY = "ARRAY"
     HASH = "HASH"
+    QUOTE = "QUOTE"
+    MACRO = "MACRO"
 
 
 class ycObject(ABC):
@@ -200,3 +203,45 @@ class Array(ycObject):
     def __str__(self):
         return str(self.inspect())
 
+
+class Quote(ycObject):
+    def __init__(self, node: Node):
+        self.node = node
+
+    def type(self):
+        return ObjectType.QUOTE
+
+    def inspect(self):
+        return "QUOTE({})".format(self.node)
+
+    def __str__(self):
+        return self.inspect()
+
+
+class MacroObject(ycObject):
+    def __init__(self, params: List[Identifier], body: BlockStatement, env: Environment):
+        self.params = params
+        self.body = body
+        self.env = env
+
+    def type(self):
+        return ObjectType.MACRO
+
+    def inspect(self):
+        return "Macro(params:{}, body:{}, env:{})".format(self.params, self.body, self.env)
+
+    def __str__(self):
+        return self.inspect()
+
+
+def turnObjectToNode(obj: ycObject):
+    if obj.type() == ObjectType.INTEGER:
+        return IntegerLiteral(Token(TokenTypes.INT, str(obj.inspect())))
+    elif obj.type() == ObjectType.STRING:
+        return StringLiteral(Token(TokenTypes.STRING, str(obj.inspect())))
+    elif obj.type() == ObjectType.BOOLEAN:
+        return BooleanLiteral(Token(TokenTypes.TRUE if obj.inspect() else TokenTypes.FALSE, str(obj.inspect())))
+    elif obj.type() == ObjectType.QUOTE:
+        return obj.node
+    else:
+        return None

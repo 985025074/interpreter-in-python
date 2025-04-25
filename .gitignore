@@ -1,0 +1,74 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+ENV/
+.Python
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# PyInstaller
+*.spec
+dist/
+build/
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# mypy / pylint / pyright
+.mypy_cache/
+.dmypy.json
+.pytype/
+.pyright/
+
+# Pyre type checker
+.pyre/
+
+# Cython build artifacts
+*.c
+*.cpp
+*.so
+
+# Distribution / packaging
+*.egg-info/
+.eggs/
+*.egg
+MANIFEST
+pip-wheel-metadata/
+__pypackages__/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# VSCode / PyCharm / other IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Local environment files
+*.env
+*.env.*
+.envrc
+*.secret
+secrets.yaml
+
+# OS generated files
+.DS_Store
+Thumbs.db

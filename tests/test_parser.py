@@ -3,7 +3,7 @@ import unittest
 from lexer.lexer import Lexer
 from parser.node import ArrayExpression, BlockStatement, BooleanLiteral, Expression, ExpressionStatement, HashLiteral, Identifier, IndexExpression, InfixExpression, IntegerLiteral, LetStatement, PreFixExpression, ReturnStatement, StringLiteral
 from parser.parser import Parser
-from tests.testUtills import print_if_error, test_call_expression, test_function_literal, test_hash_literal, test_if_expression, test_let_statement
+from tests.testUtills import print_if_error, test_call_expression, test_function_literal, test_hash_literal, test_if_expression, test_let_statement, test_macro_literal
 
 
 class TestParser(unittest.TestCase):
@@ -499,7 +499,18 @@ class TestParser(unittest.TestCase):
                           "key", "key2"], ["value", 123])
         test_hash_literal(self, program.statements[1].expression, [], [])
 
+    def test_macro(self):
+        code = """
+            macro(){
+                
+            }
+        """
+        lexer = Lexer(code)
+        parser = Parser(lexer)
+        program = parser.parse_program()
+        test_macro_literal(self, program.statements[0].expression, [], [])
+
 
 if __name__ == '__main__':
-    
+
     unittest.main()

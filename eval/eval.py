@@ -7,12 +7,24 @@ from eval.env import Environment
 from parser.node import Node
 from eval.object import *
 from parser.node import *
-
+from eval.modify import modify
 NULL = Null()
 TRUE = Boolean(True)
 FALSE = Boolean(False)
 default_env = Environment()
 
+# quote
+def evalUnquote(node: Expression, env: Environment):
+    if isinstance(node, CallExpression) and isinstance(node.function, Identifier) and node.function.value == "unquote":
+        if node.parameters is not None and len(node.parameters) == 1:
+            return turnObjectToNode(ycEval(node.parameters[0], env))
+
+    return node
+
+
+def quote(node: Expression, env: Environment):
+    node = modify(node, lambda node: evalUnquote(node, env))
+    return Quote(node)
 
 def evalBoolean(bool_node: BooleanLiteral, env: Environment):
     if bool_node.value:
@@ -198,6 +210,9 @@ def applyFunction(function: Function | Builtin, evaled_para):
 def evalCallExpression(calledFunction: CallExpression, env: Environment):
     if calledFunction.function is None:
         return Error("function not found")
+    # quote handle：
+    if isinstance(calledFunction.function, Identifier) and calledFunction.function.value == "quote":
+        return quote(calledFunction.parameters[0], env)
     function = ycEval(calledFunction.function, env)
     if isinstance(function, Error):
         return function

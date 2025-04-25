@@ -44,6 +44,7 @@ class IntegerLiteral(Expression):
     def __init__(self, token: Token):
         self.token = token
         self.value = int(token.Literal)
+        self.Literal = token.Literal
 
     def token_literal(self):
         return self.token.Literal
@@ -64,7 +65,7 @@ class StringLiteral(Expression):
         return self.token.Literal
 
     def __str__(self):
-        return str(self.value)
+        return '"'+str(self.value)+'"'
 
     def __eq__(self, other):
         return self.value == other.value
@@ -288,6 +289,9 @@ class IndexExpression(Expression):
     def __str__(self):
         return f"({self.left}[{self.index}])"
 
+    def __eq__(self, other):
+        return self.token.Literal == other.token.Literal and self.left == other.left and self.index == other.index
+
 
 class HashLiteral(Expression):
     def __init__(self, token: Token, pairs: Optional[Dict[Expression, Expression]] = None, raw_keys: Optional[List[Expression]] = None, raw_values: Optional[List[Expression]] = None):
@@ -303,3 +307,17 @@ class HashLiteral(Expression):
         pairs_str = ", ".join(f"{key}: {value}" for key,
                               value in self.pairs.items())
         return f"{{{pairs_str}}}"
+
+
+class Macro(Expression):
+    def __init__(self, token: Token, parameters: Optional[List[Identifier]] = None, body: Optional[BlockStatement] = None):
+        self.token = token
+        self.parameters = parameters
+        self.body = body
+
+    def token_literal(self):
+        return self.token.Literal
+
+    def __str__(self):
+        params = ", ".join(str(param) for param in self.parameters)
+        return f"macro({params}) {self.body}"

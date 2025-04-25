@@ -1,7 +1,7 @@
 import time
 from typing import List
 from lexer.lexer import Lexer, TokenTypes, Token
-from .node import ArrayExpression, BlockStatement, BooleanLiteral, CallExpression, EmptyExpression, Expression, ExpressionStatement, FunctionLiteral, HashLiteral, Identifier, IfExpression, IndexExpression, InfixExpression, IntegerLiteral, LetStatement, PreFixExpression, Program, ReturnStatement, StringLiteral
+from .node import ArrayExpression, BlockStatement, BooleanLiteral, CallExpression, EmptyExpression, Expression, ExpressionStatement, FunctionLiteral, HashLiteral, Identifier, IfExpression, IndexExpression, InfixExpression, IntegerLiteral, LetStatement, Macro, PreFixExpression, Program, ReturnStatement, StringLiteral
 from enum import Enum, IntEnum
 
 # 优先级
@@ -71,6 +71,7 @@ class Parser:
             TokenTypes.STRING: self.parse_string,
             TokenTypes.LBRACKET: self.parse_array,
             TokenTypes.LBRACE: self.parse_hash_literal,
+            TokenTypes.MACRO: self.parse_macro_expression,
 
 
         }
@@ -363,6 +364,33 @@ class Parser:
         function_literal.parameters = Identifier_list
 
         return function_literal
+
+    def parse_macro_expression(self):
+        macro_literal = Macro(self.current_token)
+        # consume function
+        self.advance_token()
+        # consume (
+        if not self.cur_expect_token_advance(TokenTypes.LPAREN):
+            return None
+        # parse_list here
+        Identifier_list = []
+        while self.current_token.TokenType != TokenTypes.RPAREN:
+
+            Identifier_list.append(self.parse_identifier())
+            if not self.cur_expect_token_advance(TokenTypes.IDENT):
+                return None
+            if self.current_token.TokenType != TokenTypes.RPAREN:
+                if not self.cur_expect_token_advance(TokenTypes.COMMA):
+                    return None
+
+        # consume )
+        if not self.cur_expect_token_advance(TokenTypes.RPAREN):
+            return None
+        macro_literal.body = self.parse_block_statement(
+            not_consume_last=True)
+        macro_literal.parameters = Identifier_list
+
+        return macro_literal
 
     def parse_index(self, left):
         index_exp = IndexExpression(self.current_token)

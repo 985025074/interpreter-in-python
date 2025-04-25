@@ -203,7 +203,23 @@ class BaseLexerTest(unittest.TestCase):
             Token(TokenTypes.SEMICOLON, ";"),
             Token(TokenTypes.COLON, ":"),
             Token(TokenTypes.EOF, ""),
-
         ])
+
+    def test_macro_token(self):
+        code = "macro"
+        lexer = Lexer(code)
+        tokens = []
+        while True:
+            tokens.append(lexer.next_token())
+            if tokens[-1].TokenType == TokenTypes.EOF:
+                break
+        # for index, token in enumerate(tokens):
+        #     print(f"index{index} {token}")
+        self.assertEqual(tokens, [
+            Token(TokenTypes.MACRO, "macro"),
+            Token(TokenTypes.EOF, "")
+        ])
+
+
 if __name__ == '__main__':
     unittest.main()
