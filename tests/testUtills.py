@@ -149,10 +149,10 @@ def test_macro_literal(self: unittest.TestCase, exp: Expression, params: List[st
 
     self.assertIsInstance(exp, Macro)
     # check if the parameters are correct
-    if isinstance(exp, Macro):
-        self.assertEqual(exp.parameters, Identifier_list)
-        # check if the body is correct
+    assert isinstance(exp, Macro)
+    self.assertEqual(exp.parameters, Identifier_list)
+    # check if the body is correct
 
-        self.assertIsNotNone(exp.body, "Function body is None")
-        if exp.body is not None:
-            self.assertEqual(exp.body.statements, block_stmts)
+    self.assertIsNotNone(exp.body, "Function body is None")
+    if exp.body is not None:
+        self.assertEqual(exp.body.statements, block_stmts)
