@@ -1,6 +1,6 @@
 from abc import abstractmethod, ABC
 from enum import Enum
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from eval.env import Environment
 from lexer.token import Token, TokenTypes
@@ -23,6 +23,9 @@ class ObjectType(Enum):
 
 
 class ycObject(ABC):
+    def __init__(self):
+        self.value: Any = None
+
     @abstractmethod
     def type(self) -> ObjectType:
         pass
@@ -119,6 +122,7 @@ class Boolean(ycObject, HashAble):
 
 class Null(ycObject):
     def __init__(self):
+        self.value = "Null"
         pass
 
     def type(self):

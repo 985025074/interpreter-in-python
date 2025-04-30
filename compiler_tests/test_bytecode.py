@@ -15,6 +15,8 @@ def test_make_code():
         make(OpCode.CONST)
     # add test
     assert make(OpCode.ADD) == OpCode.ADD.bytes
+    assert make(OpCode.POP) == OpCode.POP.bytes
+    assert make(OpCode.NULL) == OpCode.NULL.bytes
 
 
 def test_bytecode_to_string():
@@ -22,9 +24,13 @@ def test_bytecode_to_string():
         make(OpCode.CONST, 0),
         make(OpCode.CONST, 1),
         make(OpCode.ADD),
+        make(OpCode.POP),
+        make(OpCode.NULL),
+        make(OpCode.NULL),
+        
     ]
     bytecodes = b''.join(bytecodes)
-    expected_string = """0000 CONST [0]\n0003 CONST [1]\n0006 ADD []"""
+    expected_string = """0000 CONST [0]\n0003 CONST [1]\n0006 ADD []\n0007 POP []\n0008 NULL []\n0009 NULL []"""
     print(expected_string)
     print(print_bytecode(bytecodes))
     assert expected_string == print_bytecode(bytecodes)
@@ -35,10 +41,12 @@ def test_decode_bytecode():
         make(OpCode.CONST, 0),
         make(OpCode.CONST, 1),
         make(OpCode.ADD),
+        make(OpCode.POP),
     ]
     expected_result = [
         ([0], 3),
         ([1], 3),
+        ([], 1),
         ([], 1),
     ]
     decode_result = [unmake(bytecode[i])

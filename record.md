@@ -23,3 +23,17 @@ text
 git rm -r --cached **/__pycache__/
 
 ```
+# use assert more!
+
+# TODO :
+一个问题
+使用pytest的时候如果：
+使用全局对象
+```python
+code = [
+
+]
+def test():
+    for i in code:
+        可能会有问题，最好使用fixture
+```

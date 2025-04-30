@@ -1,30 +1,34 @@
-from eval import env
-from eval.eval import ycEval
-from eval.macro import expand_macro, handle_macro
-from lexer.lexer import Lexer, TokenTypes
+from compiler.code import OpCode
+from compiler.compiler import Compiler
+from compiler.make import make
+from eval.object import Integer
+from lexer.lexer import Lexer
 from parser.parser import Parser
 
-if __name__ == '__main__':
-    code = [[
-        """
-           let unless = macro(condition, consequence, alternative) {
-             quote(if (!(unquote(condition))) {
-            unquote(consequence);
-            } else {
-            unquote(alternative);
-            });
-            };
-            unless(10 > 5, print("not greater"), print("greater"));
 
-        """, 10
-    ]]
+test = {
+    "input": "if (true){ 10 };3333",
+    "expected_constants": [Integer(10), Integer(3333)],
+    "expected_instructions": [
+        # 0000
+        make(OpCode.TRUE),
+        # 0001
+        make(OpCode.JUMP_IF_NOT_TRUE, 10),
+        # 0004
+        make(OpCode.CONST, 0),
+        # 0007
+        make(OpCode.JUMP, 11),
+        # 0010
+        make(OpCode.NULL),
+        # 0011
+        make(OpCode.POP),
+        # 0012
+        make(OpCode.CONST, 1),
+        # 0015
+        make(OpCode.POP),
+    ],
 
-    for test_code, result in code:
-        env = env.Environment()
-        lexer = Lexer(test_code)
-        parser = Parser(lexer)
-        program = parser.parse_program()
-        handle_macro(program, env)
-        program = expand_macro(program, env)
-        result = ycEval(program, env)
-        print(result)
+}
+
+print(test["expected_instructions"])
+print(b''.join(test["expected_instructions"]))
