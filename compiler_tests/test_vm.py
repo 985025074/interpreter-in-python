@@ -3,7 +3,7 @@ from compiler.vm import VM
 from compiler_tests.utils import parse
 from compiler.compiler import Compiler
 from eval.eval import NULL
-from eval.object import Integer, Boolean
+from eval.object import Array, Hash, Integer, Boolean
 
 
 def test_vm_top():
@@ -59,6 +59,42 @@ def test_vm_top():
         ["if (1 > 2) { 10 } else { 20 }", 20],
         ["if (1 > 2) { 10 }", "Null"],
         ["if (false) { 10 }", "Null"],
+        ["let one = 1; one", 1],
+        ["let one = 1; let two = 2; one + two", 3],
+        ["let one = 1; let two = one + one; one + two", 3],
+        # string op
+        [
+            '"Hello, " + "World!"', "Hello, World!"
+        ],
+        # array
+        [
+            "[1,2,3]", [1, 2, 3]
+        ],
+        [
+            "[1+1,2*3,4/2]", [2, 6, 2]
+        ],
+        # empty array
+        [
+            "[]", []
+        ],
+        # hash test
+        [
+            "{1:2, 3:4, 5:6}", {1: 2, 3: 4, 5: 6}
+        ],
+        [
+            "{}", {}
+        ],
+        ["[1, 2, 3][1]", 2],
+        ["[1, 2, 3][0 + 2]", 3],
+        ["[[1, 1, 1]][0][0]", 1],
+        ["[][0]", "Null"],
+        ["[1, 2, 3][99]", "Null"],
+        ["[1][-1]", 1],
+        ["{1: 1, 2: 2}[1]", 1],
+        ["{1: 1, 2: 2}[2]", 2],
+        ["{1: 1}[0]", "Null"],
+        ["{}[0]", "Null"],
+
 
     ]
     for code, expect in codes:
@@ -73,7 +109,22 @@ def test_vm_top():
             print(compiler.bytecodes().to_string())
             raise e
         try:
-            assert vm.last_pop().value == expect 
+            if type(expect) == list:
+                array_obj = vm.last_pop()
+                assert isinstance(array_obj, Array)
+                array_obj = array_obj.elements
+                array_obj = [x.value for x in array_obj]
+                assert array_obj == expect
+            elif type(expect) == dict:
+                hash_obj = vm.last_pop()
+                assert isinstance(hash_obj, Hash)
+                hash_obj = hash_obj.pairs
+                hash_obj = {v.key.value: v.value.value for k,
+                            v in hash_obj.items()}
+                assert hash_obj == expect
+            else:
+                assert hasattr(vm.last_pop(), "value")
+                assert vm.last_pop().value == expect
         except Exception as e:
             print(
                 f"Error! {code} should return {expect}, but got {vm.last_pop()}")

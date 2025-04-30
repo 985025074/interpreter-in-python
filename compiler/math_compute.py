@@ -1,4 +1,5 @@
 from compiler.code import OpCode
+from compiler.compiler_exception import CompilerException
 
 
 def compute(left: int, right: int, operator: OpCode):
@@ -18,4 +19,4 @@ def compute(left: int, right: int, operator: OpCode):
         case OpCode.NOTEQ:
             return left != right
         case _:
-            raise ValueError(f"Invalid operator: {operator}")
+            raise CompilerException(f"Invalid operator: {operator}")

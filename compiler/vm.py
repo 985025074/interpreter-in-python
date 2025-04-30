@@ -3,7 +3,7 @@ from compiler.code import OpCode
 from compiler.compiler import Bytecode
 from compiler.math_compute import compute
 from eval.eval import FALSE, TRUE, handleBang, NULL
-from eval.object import Integer, ycObject, Boolean
+from eval.object import Array, Hash, HashAble, HashKey, HashPair, Integer, String, ycObject, Boolean
 
 
 class VM:
@@ -12,6 +12,7 @@ class VM:
         self.bytecode = bytecode
         # note : sp points the len(stack) + 1 loc
         self.sp = 0
+        self.globals = [0 for i in range(65535)]
 
     def run(self):
         pc = 0
@@ -35,10 +36,14 @@ class VM:
                     # two bytes long
                     right = self.pop()
                     left = self.pop()
-                    assert isinstance(left, Integer)
-                    assert isinstance(right, Integer)
+                    assert isinstance(
+                        left, Integer) or isinstance(left, String)
+                    assert isinstance(
+                        right, Integer) or isinstance(right, String)
+                    assert type(left) == type(right)
                     result = compute(left.value, right.value, op)
                     self.push(Integer(result))
+
                     pc += 1
                 case OpCode.TRUE | OpCode.FALSE:
                     self.push(TRUE if op == OpCode.TRUE else FALSE)
@@ -78,6 +83,45 @@ class VM:
                 case OpCode.NULL:
                     self.push(NULL)
                     pc += 1
+                case OpCode.SETGLOBAL:
+                    self.globals[int.from_bytes(
+                        instructions[pc+1:pc+3], byteorder='big')] = self.pop()
+                    pc += 3
+                case OpCode.GETGLOBAL:
+                    index = int.from_bytes(
+                        instructions[pc+1:pc+3], byteorder='big')
+                    self.push(self.globals[index])
+                    pc += 3
+                case OpCode.ARRAY:
+                    array = []
+                    for i in range(int.from_bytes(instructions[pc+1:pc+3], byteorder='big')):
+                        array.insert(0, self.pop())
+                    self.push(Array(array))
+                    pc += 3
+                case OpCode.HASH:
+                    dic = {}
+                    for i in range(int.from_bytes(instructions[pc+1:pc+3], byteorder='big')):
+                        value = self.pop()
+                        key = self.pop()
+                        dic[HashKey(key.type(), key.value)
+                            ] = HashPair(key, value)
+                    self.push(Hash(dic))
+                    pc += 3
+                case OpCode.INDEX:
+                    index = self.pop()
+                    indexable = self.pop()
+
+                    assert isinstance(indexable, Array) or isinstance(
+                        indexable, Hash)
+                    assert isinstance(index, HashAble)
+                    try:
+                        if isinstance(indexable, Array):
+                            self.push(indexable[index])
+                        else:
+                            self.push(indexable[index.hash_key()])
+                    except:
+                        self.push(NULL)
+                    pc += 1
                 case _:
                     pass
 
@@ -96,5 +140,13 @@ class VM:
         return self.stack[self.sp]
 
     def last_pop(self):
+        try:
+            return self.stack[self.sp]
+        except IndexError:
+            return None
 
-        return self.stack[self.sp]
+    def top(self):
+        if self.sp > 0:
+            return self.stack[self.sp-1]
+        else:
+            return None

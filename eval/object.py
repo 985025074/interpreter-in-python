@@ -20,6 +20,7 @@ class ObjectType(Enum):
     HASH = "HASH"
     QUOTE = "QUOTE"
     MACRO = "MACRO"
+    COMPILED_FUNCTION = "COMPILED_FUNCTION"
 
 
 class ycObject(ABC):
@@ -76,6 +77,11 @@ class Hash(ycObject):
 
     def __str__(self):
         return str(self.inspect())
+
+    def __getitem__(self, item):
+        if isinstance(item, HashKey):
+            return self.pairs[item].value
+        return self.pairs[item.hash_key()].value
 
 
 class Integer(ycObject, HashAble):
@@ -206,6 +212,11 @@ class Array(ycObject):
 
     def __str__(self):
         return str(self.inspect())
+
+    def __getitem__(self, item):
+        if isinstance(item, Integer):
+            return self.elements[item.value]
+        return self.elements[item]
 
 
 class Quote(ycObject):

@@ -20,6 +20,14 @@ class OpCode(Enum):
     JUMP_IF_NOT_TRUE = 14
     JUMP = 15
     NULL = 16
+    SETGLOBAL = 17
+    GETGLOBAL = 18
+    ARRAY = 19
+    HASH = 20
+    INDEX = 21
+    RETURN = 22
+    RETURN_NULL= 23
+    CALL = 24
 
     @property
     def bytes(self):
@@ -49,4 +57,13 @@ OpCodeInfo: Dict[OpCode, OpcodeInfoPair] = {
     OpCode.JUMP_IF_NOT_TRUE: {"name": "JUMP_IF_NOT_TRUE", "args_length": [2]},
     OpCode.JUMP: {"name": "JUMP", "args_length": [2]},
     OpCode.NULL: {"name": "NULL", "args_length": []},
+    OpCode.SETGLOBAL: {"name": "SETGLOBAL", "args_length": [2]},
+    OpCode.GETGLOBAL: {"name": "GETGLOBAL", "args_length": [2]},
+    OpCode.ARRAY: {"name": "ARRAY", "args_length": [2]},
+    OpCode.HASH: {"name": "HASH", "args_length": [2]},
+    OpCode.INDEX: {"name": "INDEX", "args_length": []},
+    OpCode.RETURN: {"name": "RETURN", "args_length": []},
+    OpCode.CALL: {"name": "CALL", "args_length": []},
+    OpCode.RETURN_NULL: {"name": "RETURN_NULL", "args_length": []},
+
 }
