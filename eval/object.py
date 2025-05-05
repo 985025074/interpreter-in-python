@@ -21,6 +21,7 @@ class ObjectType(Enum):
     QUOTE = "QUOTE"
     MACRO = "MACRO"
     COMPILED_FUNCTION = "COMPILED_FUNCTION"
+    CLOSURE = "CLOSURE"
 
 
 class ycObject(ABC):
@@ -99,7 +100,7 @@ class Integer(ycObject, HashAble):
 
 
 class String(ycObject, HashAble):
-    def __init__(self, value: int):
+    def __init__(self, value: str):
         self.value = value
 
     def type(self):

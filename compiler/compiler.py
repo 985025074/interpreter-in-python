@@ -1,5 +1,6 @@
 
 from typing import List, Optional
+from compiler.builtin_funcs import BuiltinFunction
 from compiler.code import OpCode
 from compiler.compiledfunction import CompiledFunction
 from compiler.compiler_exception import CompilerException
@@ -7,7 +8,7 @@ from compiler.make import make, print_bytecode
 from compiler.symtable import Scope, SymTable, ycSymbol
 from eval.object import Integer, String, ycObject
 from lexer.token import TokenTypes
-from parser.node import ArrayExpression, BlockStatement, BooleanLiteral, ExpressionStatement, FunctionLiteral, HashLiteral, Identifier, IfExpression, IndexExpression, InfixExpression, IntegerLiteral, LetStatement, Node, PreFixExpression, Program, ReturnStatement, StringLiteral
+from parser.node import ArrayExpression, BlockStatement, BooleanLiteral, CallExpression, ExpressionStatement, FunctionLiteral, HashLiteral, Identifier, IfExpression, IndexExpression, InfixExpression, IntegerLiteral, LetStatement, Node, PreFixExpression, Program, ReturnStatement, StringLiteral
 
 
 class Bytecode:
@@ -25,20 +26,25 @@ class Bytecode:
 
 
 class CompileScope:
-    def __init__(self):
+    def __init__(self, symtable: SymTable):
         self.instructions: List[bytes] = []
         self.last_instruction = b''
         self.previous_instruction = b''
         self.byteslen = 0
+        self.symtable = symtable
 
 
 class Compiler:
     def __init__(self,) -> None:
         self.constants: List[ycObject] = []
-        self.scopes = [CompileScope()]
+        self.scopes = [CompileScope(SymTable())]
         self.scope_index = 0
-        self.symtable = SymTable()
-        pass
+        self.init_builtins()
+
+
+    def init_builtins(self):
+        for obj in BuiltinFunction:
+            self.symtable.add_builtin_symbol(obj["name"])
 
     def bytecodes(self):
         return Bytecode(constants=self.constants, instructions=self.instructions)
@@ -49,12 +55,25 @@ class Compiler:
 
     def enter_scope(self):
         self.scope_index += 1
-        self.scopes.append(CompileScope())
+        self.scopes.append(CompileScope(
+            self.scopes[self.scope_index - 1].symtable.generate_child()))
 
     def leave_scope(self):
         self.scope_index -= 1
         scope = self.scopes.pop()
-        return b''.join(scope.instructions)
+        return b''.join(scope.instructions), len(scope.symtable.symbols)
+
+    @property
+    def current_scope(self):
+        return self.scopes[self.scope_index]
+
+    @property
+    def symtable(self):
+        return self.scopes[self.scope_index].symtable
+
+    @symtable.setter
+    def symtable(self, symtable):
+        self.scopes[self.scope_index].symtable = symtable
 
     @property
     def instructions(self):
@@ -62,6 +81,7 @@ class Compiler:
 
     @instructions.setter
     def instructions(self, instructions):
+
         self.scopes[self.scope_index].instructions = instructions
 
     @property
@@ -195,11 +215,19 @@ class Compiler:
                     self.compile(statement)
             elif type(node) == LetStatement:
                 self.compile(node.right_expression)
-
                 sym = self.symtable.add_symbol(
-                    node.identifier.value, Scope.GLOBAL)
-
-                self.add_instruction(OpCode.SETGLOBAL, sym.index)
+                    node.identifier.value)
+                assert isinstance(sym, ycSymbol)
+                if sym.scope == Scope.GLOBAL:
+                    self.add_instruction(OpCode.SETGLOBAL, sym.index)
+                elif sym.scope == Scope.LOCAL:
+                    self.add_instruction(OpCode.SETLOCAL, sym.index)
+                elif sym.scope == Scope.BUILTIN:
+                    raise CompilerException(
+                        "Cannot assign to a builtin function")
+                else:
+                    raise CompilerException(
+                        f"Unknown scope {sym.scope} for symbol {sym.name}")
             elif type(node) == Identifier:
                 sym = self.symtable.resolve_symbol(node.value)
                 if sym is None:
@@ -207,17 +235,40 @@ class Compiler:
                         f"Identifier {node.value} not found in symbol table")
                 else:
                     assert isinstance(sym, ycSymbol)
+                if sym.scope == Scope.GLOBAL:
                     self.add_instruction(OpCode.GETGLOBAL, sym.index)
+                elif sym.scope == Scope.LOCAL:
+                    self.add_instruction(OpCode.GETLOCAL, sym.index)
+                elif sym.scope == Scope.BUILTIN:
+                    self.add_instruction(OpCode.LOAD_BUILTIN, sym.index)
+                else:
+                    raise CompilerException(
+                        f"Unknown scope {sym.scope} for symbol {sym.name}")
             elif type(node) == IndexExpression:
                 self.compile(node.left)
                 self.compile(node.index)
                 self.add_instruction(OpCode.INDEX)
             elif type(node) == FunctionLiteral:
                 self.enter_scope()
+                # add it to the function's symbol table
+                for arg in node.parameters if node.parameters is not None else []:
+                    sym = self.symtable.add_symbol(arg.value)
+                    assert isinstance(sym, ycSymbol)
                 self.compile(node.body)
-                ins = self.leave_scope()
 
-                self.add_const(CompiledFunction(ins))
+                # handle two special cases:
+                if self.instructions == []:
+                    self.add_instruction(OpCode.RETURN_NULL)
+                # if last is pop, remove it and replace it with return null
+                elif self.last_instruction[0] == OpCode.POP.bytes[0]:
+                    self.instructions.pop()
+                    self.byteslen -= len(self.last_instruction)
+                    self.add_instruction(OpCode.RETURN)
+
+                ins, num_locals = self.leave_scope()
+
+                self.add_const(CompiledFunction(
+                    ins, num_locals, len(node.parameters if node.parameters is not None else [])))
                 self.add_instruction(OpCode.CONST, len(self.constants) - 1)
             elif type(node) == ReturnStatement:
                 if node.return_value is not None:
@@ -225,8 +276,19 @@ class Compiler:
                 else:
                     pass
                 self.add_instruction(OpCode.RETURN)
+            elif type(node) == CallExpression:
+                self.compile(node.function)
+                # todo: for arg in node.arguments:
+                if node.parameters is not None:
+                    # push the parameters to the stack
+                    assert node.function is not None
+                    for arg in node.parameters:  # type: ignore
+                        self.compile(arg)
+                    self.add_instruction(OpCode.CALL, len(node.parameters))
+                else:
+                    self.add_instruction(OpCode.CALL, 0)
 
         except Exception as e:
             # print(f"Error compiling: {e}")
-            raise CompilerException(f"{e}")
+            raise e
         return

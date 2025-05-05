@@ -1,4 +1,5 @@
 
+import pytest
 from compiler.vm import VM
 from compiler_tests.utils import parse
 from compiler.compiler import Compiler
@@ -94,6 +95,49 @@ def test_vm_top():
         ["{1: 1, 2: 2}[2]", 2],
         ["{1: 1}[0]", "Null"],
         ["{}[0]", "Null"],
+        # function call test
+        ["let identity = function() {5 }; identity()", 5],
+        ["let one = function() { 1; };let two = function() { 2; };one() + two()", 3],
+        ["let a = function() { 1 };let b = function() { a() + 1 };let c = function() { b() + 1 };c();", 3],
+        ["let earlyExit = function() { return 99; 100; };earlyExit();", 99],
+        ["let earlyExit = function() { return 99; return 100; };earlyExit();", 99],
+        ["let earlyExit = function() { };earlyExit();", "Null"],
+        ["let one = function() { let one = 1; one }; one();", 1],
+        ["let oneAndTwo = function() { let one = 1; let two = 2; one + two; }; oneAndTwo();", 3],
+        [
+            "let oneAndTwo = function() { let one = 1; let two = 2; one + two; }; "
+            "let threeAndFour = function() { let three = 3; let four = 4; three + four; }; "
+            "oneAndTwo() + threeAndFour();",
+            10,
+        ],
+        [
+            "let firstFoobar = function() { let foobar = 50; foobar; }; "
+            "let secondFoobar = function() { let foobar = 100; foobar; }; "
+            "firstFoobar() + secondFoobar();",
+            150,
+        ],
+        [
+            "let globalSeed = 50; "
+            "let minusOne = function() { let num = 1; globalSeed - num; }; "
+            "let minusTwo = function() { let num = 2; globalSeed - num; }; "
+            "minusOne() + minusTwo();",
+            97,
+        ],
+        ["let identity = function(a) { a; };identity(4);", 4],
+        [
+            "let sum = function(a, b) { a + b; };sum(1, 2);", 3
+        ],
+        ["let globalNum = 10; let sum = function(a, b) {let c = a + b;c + globalNum;};let outer = function() {sum(1, 2) + sum(3, 4) + globalNum;};outer() + globalNum;", 50,
+         ],
+        [
+            "let func = function(a) { a; }; func()", "ERROR"
+        ],
+        # test builtin function:len: i just test this for quick learning and laziness
+        [
+            "len([1,2,3])", 3
+        ]
+
+
 
 
     ]
@@ -101,12 +145,21 @@ def test_vm_top():
         compiler = Compiler()
         program = parse(code)
         compiler.compile(program)
+        if expect == "ERROR":
+            with pytest.raises(Exception):
+                vm = VM(compiler.bytecodes())
+                vm.run()
+            continue
         try:
             vm = VM(compiler.bytecodes())
             vm.run()
         except Exception as e:
             print("Error! Happen in the vm run!:", e)
             print(compiler.bytecodes().to_string())
+            print("constants here:")
+            for c in compiler.bytecodes().constants:
+                print(str(c))
+            print("source code here:", code)
             raise e
         try:
             if type(expect) == list:
@@ -129,4 +182,5 @@ def test_vm_top():
             print(
                 f"Error! {code} should return {expect}, but got {vm.last_pop()}")
             print(compiler.bytecodes().to_string())
+
             raise e

@@ -1,5 +1,5 @@
 from compiler.code import OpCode
-from compiler.compiler import Compiler
+from compiler.compiler import CompileScope, Compiler
 from compiler.symtable import SymTable
 from compiler.vm import VM
 from eval.env import Environment
@@ -19,23 +19,31 @@ prompt = ">>>"
 env = Environment()
 print(welcome_message)
 
+first_call = True
 
-def eval(code, sym, globals):
+
+def eval(code, constants, scopes, globals):
+    global first_call
     if code == "":
         return None
     lexer = Lexer(code)
     parser = Parser(lexer)
     compiler = Compiler()
-    compiler.symtable = sym
+    compiler.scopes = scopes
+    compiler.constants = constants
+    if first_call:
+        compiler.init_builtins()
+        first_call = False
 
     compiler.compile(parser.parse_program())
     if compiler.instructions != [] and compiler.instructions[-1][0:1] == OpCode.POP.bytes:
         compiler.instructions.pop()
 
     vm = VM(compiler.bytecodes())
-    # print(compiler.bytecodes())
-    vm.globals = globals
 
+    vm.globals = globals
+    # print(vm.globals[:10])
+    # print(compiler.constants)
     vm.run()
 
     result = vm.top()
@@ -49,6 +57,7 @@ def repl():
     import sys
     global_sym = SymTable()
     globals = [0 for i in range(65535)]
+    global_constants = []
     prompt = ">>> "
     buffer = []
 
@@ -61,7 +70,8 @@ def repl():
         if line.strip() == "":  # 用户输入空行，表示代码输入完毕
             source = "\n".join(buffer)
             try:
-                result = eval(source, sym=global_sym, globals=globals)
+                result = eval(source, constants=global_constants, scopes=[
+                              CompileScope(global_sym)], globals=globals)
                 if result is not None:
                     print(result)
             except SyntaxError:

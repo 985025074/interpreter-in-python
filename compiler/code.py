@@ -26,8 +26,12 @@ class OpCode(Enum):
     HASH = 20
     INDEX = 21
     RETURN = 22
-    RETURN_NULL= 23
+    RETURN_NULL = 23
     CALL = 24
+    SETLOCAL = 25
+    GETLOCAL = 26
+    LOAD_BUILTIN = 27
+    GETCLOSURE = 28
 
     @property
     def bytes(self):
@@ -63,7 +67,11 @@ OpCodeInfo: Dict[OpCode, OpcodeInfoPair] = {
     OpCode.HASH: {"name": "HASH", "args_length": [2]},
     OpCode.INDEX: {"name": "INDEX", "args_length": []},
     OpCode.RETURN: {"name": "RETURN", "args_length": []},
-    OpCode.CALL: {"name": "CALL", "args_length": []},
+    OpCode.CALL: {"name": "CALL", "args_length": [1]},
     OpCode.RETURN_NULL: {"name": "RETURN_NULL", "args_length": []},
-
+    OpCode.SETLOCAL: {"name": "SETLOCAL", "args_length": [2]},
+    OpCode.GETLOCAL: {"name": "GETLOCAL", "args_length": [2]},
+    OpCode.LOAD_BUILTIN: {"name": "LOAD_BUILTIN", "args_length": [1]},
+    OpCode.GETCLOSURE: {"name": "GETCLOSURE", "args_length": [2,1]},
+    
 }

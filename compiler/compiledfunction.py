@@ -3,12 +3,14 @@ from eval.object import ObjectType, ycObject
 
 
 class CompiledFunction(ycObject):
-    def __init__(self, instructions: bytes):
+    def __init__(self, instructions: bytes, num_locals: int = 0, num_args: int = 0):
 
         self.instructions = instructions
         if isinstance(instructions, list):
             self.instructions = b''.join(instructions)
         self.value = instructions
+        self.num_locals = num_locals
+        self.num_args = num_args
 
     def type(self) -> ObjectType:
         return ObjectType.COMPILED_FUNCTION
